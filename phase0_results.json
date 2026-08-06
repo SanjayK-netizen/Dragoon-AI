@@ -1,0 +1,52 @@
+[
+  {
+    "type": "qa",
+    "prompt": "What is the capital of France? Answer in one sentence.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "qa",
+    "prompt": "Explain what a SQLite database is in one sentence.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "qa",
+    "prompt": "What year did the first moon landing happen?",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "json",
+    "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"Set a reminder for 5pm.\" Respond with JSON only, no other text.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "json",
+    "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"What's the weather like?\" Respond with JSON only, no other text.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "json",
+    "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"Tell me a joke.\" Respond with JSON only, no other text.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "tool",
+    "prompt": "You have a tool called \"set_reminder\" with args {time: string, message: string}. The user said: \"Remind me to call mom at 6pm.\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "tool",
+    "prompt": "You have a tool called \"get_time\" with no args. The user said: \"What time is it?\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {}}.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "tool",
+    "prompt": "You have a tool called \"calculate\" with args {expression: string}. The user said: \"What's 47 times 23?\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  },
+  {
+    "type": "tool",
+    "prompt": "You have a tool called \"open_file\" with args {filename: string}. The user said: \"Open my notes file.\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
+    "error": "model 'qwen3.5:4b' not found (status code: 404)"
+  }
+]
