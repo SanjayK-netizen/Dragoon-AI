@@ -3,8 +3,8 @@
     "type": "qa",
     "prompt": "What is the capital of France? Answer in one sentence.",
     "response": "The capital of France is Paris.",
-    "first_token_s": 21.87,
-    "total_s": 22.69,
+    "first_token_s": 0.86,
+    "total_s": 1.52,
     "json_valid": null,
     "thinking_chars": 0,
     "response_chars": 31
@@ -12,29 +12,29 @@
   {
     "type": "qa",
     "prompt": "Explain what a SQLite database is in one sentence.",
-    "response": "A SQLite database is a self-contained, lightweight relational data model that stores information as structured text within the file system itself without requiring external software installation or network connectivity to function.",
-    "first_token_s": 1.3,
-    "total_s": 4.48,
+    "response": "A SQLite database is a self-contained, file-based relational database management system that stores data as structured text records within the same physical storage space it uses for its own files.",
+    "first_token_s": 0.79,
+    "total_s": 4.16,
     "json_valid": null,
     "thinking_chars": 0,
-    "response_chars": 231
+    "response_chars": 197
   },
   {
     "type": "qa",
     "prompt": "What year did the first moon landing happen?",
-    "response": "The first successful human landing on the Moon occurred in **1969**. This historic event took place during a single day, July 20\u201324. The mission was led by American astronaut Neil Armstrong and commander Buzz Aldrin, while Michael Collins remained aboard the command module *Command* to orbit the lunar surface until they returned to Earth on August 7 that same year.\n\nThe landing site is known as **Apollo 11**, which also marked the first time humans stepped onto another planet in history (though it was not a permanent settlement).",
-    "first_token_s": 1.14,
-    "total_s": 12.52,
+    "response": "The Apollo 11 mission, which marked humanity's first successful lunar landing, occurred in **1969**. Specifically, astronauts Neil Armstrong and Buzz Aldrin touched down on the Moon at approximately 20:17 UTC (8:17 a.m. EDT) on July 20, 1969.",
+    "first_token_s": 1.09,
+    "total_s": 7.65,
     "json_valid": null,
     "thinking_chars": 0,
-    "response_chars": 535
+    "response_chars": 242
   },
   {
     "type": "json",
     "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"Set a reminder for 5pm.\" Respond with JSON only, no other text.",
     "response": "{\"intent\": \"command\"}",
-    "first_token_s": 2.03,
-    "total_s": 2.66,
+    "first_token_s": 1.75,
+    "total_s": 2.32,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 21
@@ -44,7 +44,7 @@
     "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"What's the weather like?\" Respond with JSON only, no other text.",
     "response": "{\"intent\": \"question\"}",
     "first_token_s": 1.71,
-    "total_s": 2.26,
+    "total_s": 2.27,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 22
@@ -53,8 +53,8 @@
     "type": "json",
     "prompt": "Classify the intent of this text as JSON with a single key \"intent\" whose value is exactly one of: command, question, conversation. Text: \"Tell me a joke.\" Respond with JSON only, no other text.",
     "response": "{\"intent\": \"command\"}",
-    "first_token_s": 1.73,
-    "total_s": 2.35,
+    "first_token_s": 1.6,
+    "total_s": 2.13,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 21
@@ -62,19 +62,19 @@
   {
     "type": "tool",
     "prompt": "You have a tool called \"set_reminder\" with args {time: string, message: string}. The user said: \"Remind me to call mom at 6pm.\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
-    "response": "{\"tool_name\": \"set_reminder\", \"args\": {}}",
-    "first_token_s": 1.95,
-    "total_s": 3.59,
+    "response": "{\"tool_name\": \"set_reminder\", \"args\": {\"time\": \"18:00\", \"message\": \"Call mom\"}}",
+    "first_token_s": 0.81,
+    "total_s": 3.47,
     "json_valid": true,
     "thinking_chars": 0,
-    "response_chars": 41
+    "response_chars": 79
   },
   {
     "type": "tool",
     "prompt": "You have a tool called \"get_time\" with no args. The user said: \"What time is it?\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {}}.",
     "response": "{\"tool_name\": \"get_time\", \"args\": {}}",
-    "first_token_s": 1.89,
-    "total_s": 3.05,
+    "first_token_s": 0.84,
+    "total_s": 1.99,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 37
@@ -83,8 +83,8 @@
     "type": "tool",
     "prompt": "You have a tool called \"calculate\" with args {expression: string}. The user said: \"What's 47 times 23?\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
     "response": "{\"tool_name\": \"calculate\", \"args\": {\"expression\": \"47 * 23\"}}",
-    "first_token_s": 1.73,
-    "total_s": 3.64,
+    "first_token_s": 0.87,
+    "total_s": 2.86,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 61
@@ -93,8 +93,8 @@
     "type": "tool",
     "prompt": "You have a tool called \"open_file\" with args {filename: string}. The user said: \"Open my notes file.\" Respond ONLY with JSON in the form {\"tool_name\": \"...\", \"args\": {...}}.",
     "response": "{\"tool_name\": \"open_file\", \"args\": {\"filename\": \"notes\"}}",
-    "first_token_s": 1.68,
-    "total_s": 3.24,
+    "first_token_s": 0.83,
+    "total_s": 2.35,
     "json_valid": true,
     "thinking_chars": 0,
     "response_chars": 57
