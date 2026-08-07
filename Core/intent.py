@@ -31,7 +31,8 @@ CLASSIFY_PROMPT_TEMPLATE = (
     "- command: asks the assistant to DO something (set a reminder, open a file, calculate, "
     "control something)\n"
     "- question: asks for information, no action required\n"
-    "- conversation: greetings, small talk, anything that is neither of the above\n"
+    "- conversation: greetings, small talk, jokes, stories, creative requests, or anything "
+    "else that is neither a command nor a question\n"
     "Text: \"{text}\"\n"
     "Respond with JSON only, no other text."
 )
