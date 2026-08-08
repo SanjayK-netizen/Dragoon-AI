@@ -42,16 +42,20 @@ LOW_CONFIDENCE_LOG = "logs/low_confidence_candidates.jsonl"
 # Known command vocabulary — must stay in sync with the Phase 4 tool registry.
 # Canonical phrasing for each supported action; candidates are scored against
 # these, not against each other.
+# Known command vocabulary — must stay in sync with the Phase 4 tool registry.
+# Multiple natural phrasings per action, not one terse canonical phrase —
+# a single anchor like "set a reminder" scores poorly against a full
+# paraphrased sentence even when the meaning clearly matches.
 KNOWN_COMMANDS = [
-    "set a reminder",
-    "delete a reminder",
-    "open a file",
-    "calculate a math expression",
-    "get the current time",
-    "add an item to a list",
-    "send a message",
-    "start a timer",
-    "check the weather",
+    "set a reminder", "remind me to do something", "schedule a reminder for later",
+    "delete a reminder", "remove a reminder", "cancel a reminder",
+    "open a file", "open a document", "open my notes", "launch a file",
+    "calculate a math expression", "do a calculation", "compute a math problem",
+    "get the current time", "what time is it", "tell me the time",
+    "add an item to a list", "add something to my shopping list", "put an item on my list",
+    "send a message", "text someone", "message a contact",
+    "start a timer", "set a timer for some minutes", "begin a countdown",
+    "check the weather", "what's the weather like", "get the weather forecast",
 ]
 
 
@@ -93,8 +97,10 @@ def _generate_candidates(text):
     """Sample N_CANDIDATES interpretations of a command via temperature sampling."""
     candidates = []
     prompt = (
-        "Rephrase this user command as a single clear, actionable instruction, "
-        f"in your own words, one sentence, no preamble.\nCommand: \"{text}\""
+        "Rephrase this user command as a SHORT canonical action phrase — 3-6 words, "
+        "not a full sentence. Match the style of: \"set a reminder\", \"open a file\", "
+        "\"start a timer\". No preamble, no punctuation beyond the phrase itself.\n"
+        f"Command: \"{text}\""
     )
     for _ in range(N_CANDIDATES):
         try:
