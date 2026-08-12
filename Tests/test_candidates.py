@@ -81,7 +81,10 @@ def run_candidate_test():
         clear_correct += ok
         best = result["candidates"][result["selected_index"]] if result["selected_index"] is not None else None
         score = best["combined_score"] if best else None
-        print(f"[{'OK ' if ok else 'FAIL'}] action={action:12s} score={score} text={text!r}")
+        para = best["text"] if best else None
+        agreement = result.get("agreement_score")
+        print(f"[{'OK ' if ok else 'FAIL'}] action={action:12s} score={score} agreement={agreement} "
+              f"text={text!r}\n       -> paraphrased as: {para!r}")
 
     print(f"\n=== AMBIGUOUS COMMANDS ({len(AMBIGUOUS_COMMANDS)}) ===\n")
     ambiguous_safe = 0
