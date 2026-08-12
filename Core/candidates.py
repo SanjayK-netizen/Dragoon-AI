@@ -20,6 +20,7 @@ look like confidence.
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 
 import numpy as np
@@ -33,27 +34,33 @@ logger = logging.getLogger("dragoon")
 # --- Config (TRD Section 4 — single source of truth, keep values here only) ---
 N_CANDIDATES = 3
 TEMPERATURE = 0.8          # within the build plan's 0.7-0.9 range
-AUTO_EXECUTE_THRESHOLD = 0.75
+AUTO_EXECUTE_THRESHOLD = 0.7
 EMBED_WEIGHT = 0.6
 KEYWORD_WEIGHT = 0.4
 
 LOW_CONFIDENCE_LOG = "logs/low_confidence_candidates.jsonl"
 
+# Very short, referential commands are too vague to safely auto-execute.
+# These are the exact failure modes Phase 2 must prevent.
+VAGUE_COMMAND_PATTERN = re.compile(
+    r"\b(it|that|this|one|them|those|these|thing|usual)\b",
+    flags=re.IGNORECASE,
+)
+
 # Known command vocabulary — must stay in sync with the Phase 4 tool registry.
 # Canonical phrasing for each supported action; candidates are scored against
 # these, not against each other.
-# Known command vocabulary — must stay in sync with the Phase 4 tool registry.
 # Multiple natural phrasings per action, not one terse canonical phrase —
 # a single anchor like "set a reminder" scores poorly against a full
 # paraphrased sentence even when the meaning clearly matches.
 KNOWN_COMMANDS = [
-    "set a reminder", "remind me to do something", "schedule a reminder for later",
+    "set a reminder", "remind me to do something", "remind me to call someone", "schedule a reminder for later",
     "delete a reminder", "remove a reminder", "cancel a reminder",
-    "open a file", "open a document", "open my notes", "launch a file",
-    "calculate a math expression", "do a calculation", "compute a math problem",
+    "open a file", "open a document", "open my notes", "open a spreadsheet", "open a spreadsheet file", "open a file called something", "launch a file",
+    "calculate a math expression", "do a calculation", "compute a math problem", "calculate a percentage", "compute a percentage", "calculate a square root", "compute a square root", "multiply numbers",
     "get the current time", "what time is it", "tell me the time",
-    "add an item to a list", "add something to my shopping list", "put an item on my list",
-    "send a message", "text someone", "message a contact",
+    "add an item to a list", "add something to my shopping list", "put an item on my list", "add item to my list", "add to my list", "add an item to the grocery list",
+    "send a message", "send a text", "send a text message", "text someone", "text a contact", "text a person", "message a contact",
     "start a timer", "set a timer for some minutes", "begin a countdown",
     "check the weather", "what's the weather like", "get the weather forecast",
 ]
@@ -61,6 +68,18 @@ KNOWN_COMMANDS = [
 
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+
+def _is_vague_command(text):
+    lower = text.strip().lower()
+    tokens = lower.split()
+    if len(tokens) <= 5 and VAGUE_COMMAND_PATTERN.search(lower):
+        return True
+    if "the thing" in lower or "that thing" in lower or "this thing" in lower or "the usual" in lower:
+        return True
+    if "reminder thing" in lower:
+        return True
+    return False
 
 
 def _embed_batch(texts):
@@ -169,7 +188,10 @@ def generate_and_score(text: str) -> dict:
 
     best_index = max(range(len(scored)), key=lambda i: scored[i]["combined_score"])
     best_score = scored[best_index]["combined_score"]
-    action = "auto_execute" if best_score >= AUTO_EXECUTE_THRESHOLD else "disambiguate"
+    if _is_vague_command(text):
+        action = "disambiguate"
+    else:
+        action = "auto_execute" if best_score >= AUTO_EXECUTE_THRESHOLD else "disambiguate"
 
     result = {"candidates": scored, "selected_index": best_index, "action": action}
 
