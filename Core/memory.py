@@ -10,7 +10,7 @@ question/conversation path.
 import json
 import os
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List
 
 
@@ -81,8 +81,19 @@ def update_context(key: str, value: Any) -> None:
         conn.commit()
 
 
+def _is_recent(timestamp: str, *, max_age_hours: int = 24) -> bool:
+    """Return True when a timestamp is still within the configured recency window."""
+    try:
+        parsed = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        return False
+
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
+    return parsed.astimezone(timezone.utc) >= cutoff
+
+
 def get_context(n: int = 5) -> Dict[str, Any]:
-    """Return a bounded view of recent commands plus persisted context state."""
+    """Return a bounded view of recent commands plus fresh persisted context state."""
     with _get_connection() as conn:
         recent_rows = conn.execute(
             """
@@ -110,6 +121,8 @@ def get_context(n: int = 5) -> Dict[str, Any]:
 
     context_map: Dict[str, Any] = {}
     for row in context_rows:
+        if not _is_recent(row["updated_at"], max_age_hours=24):
+            continue
         try:
             context_map[row["key"]] = json.loads(row["value"])
         except (TypeError, ValueError):

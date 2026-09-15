@@ -2,6 +2,7 @@ import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from importlib import reload
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -32,6 +33,21 @@ class MemoryTests(unittest.TestCase):
         self.assertEqual(context["context"]["favorite_color"], "blue")
         self.assertEqual(context["context"]["last_command"], "Set a reminder for 5pm")
         self.assertIsInstance(context["commands"], list)
+
+    def test_get_context_excludes_stale_context_rows(self):
+        stale_time = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
+        with self.memory._get_connection() as conn:
+            conn.execute(
+                "INSERT INTO context(key, value, updated_at) VALUES (?, ?, ?)",
+                ("stale_fact", '"old value"', stale_time),
+            )
+            conn.commit()
+
+        self.memory.update_context("fresh_fact", "new value")
+
+        context = self.memory.get_context(n=5)
+        self.assertNotIn("stale_fact", context["context"])
+        self.assertEqual(context["context"]["fresh_fact"], "new value")
 
 
 if __name__ == "__main__":
