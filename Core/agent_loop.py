@@ -14,6 +14,7 @@ import re
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
 
+from core.hardening import should_block_command, validate_tool_payload
 from Tools.register import REGISTRY, TOOL_SCHEMAS
 
 logger = logging.getLogger("dragoon")
@@ -67,6 +68,10 @@ def _parse_inline_args(raw_args: str) -> Dict[str, Any]:
 
 def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., Any]]] = None) -> Dict[str, Any]:
     registry = tool_registry or _default_registry()
+    blocked, reason = should_block_command(text)
+    if blocked:
+        raise ValueError(f"unsafe command blocked: {reason}")
+
     lowered = text.lower().strip()
 
     addition_match = re.match(r"^(?:add|sum)\s+(.+?)\s+(?:and|to|plus)\s+(.+)$", text.strip(), re.IGNORECASE)
@@ -172,6 +177,7 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
                 if tool_name not in registry:
                     raise ValueError(f"tool {tool_name!r} is not in the registry")
                 _validate_args(tool_name, args)
+                args = validate_tool_payload(tool_name, args)
             elif state is AgentState.EXECUTE:
                 try:
                     if isinstance(args, dict):
@@ -198,6 +204,7 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
             tool_name = parsed["tool"]
             args = parsed["args"]
             _validate_args(tool_name, args)
+            args = validate_tool_payload(tool_name, args)
             if isinstance(args, dict):
                 result = registry[tool_name](**args)
             else:

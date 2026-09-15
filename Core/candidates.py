@@ -28,6 +28,8 @@ import numpy as np
 import ollama
 import hashlib
 
+from core.hardening import should_block_command
+
 MODEL_NAME = "qwen3.5:2b"
 EMBED_MODEL_NAME = "qwen3-embedding:0.6b"
 MAX_MODEL_RETRIES = 3
@@ -296,6 +298,10 @@ def generate_and_score(text: str) -> dict:
         return {"candidates": [], "selected_index": None, "action": "disambiguate"}
 
     lower = text.lower()
+    blocked, reason = should_block_command(text)
+    if blocked:
+        logger.warning("generate_and_score: blocked unsafe input %r (%s)", text, reason)
+        return {"candidates": [], "selected_index": None, "action": "disambiguate"}
     # Explicit arithmetic already contains the intent and operands; sampling
     # paraphrases can hallucinate or alter those operands, so keep it stable.
     raw_candidates = (

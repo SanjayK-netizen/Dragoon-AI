@@ -96,7 +96,7 @@ except ImportError:
         }
 
 try:
-    from core.memory import get_context, update_context
+    from core.memory import get_context, update_context, record_command
 except ImportError:
     def get_context(n=5):
         logging.getLogger("dragoon").warning(
@@ -105,6 +105,9 @@ except ImportError:
         return {}
 
     def update_context(key, value):
+        pass
+
+    def record_command(raw_text, intent, outcome):
         pass
 
 try:
@@ -167,14 +170,19 @@ def process_turn(raw_text, logger):
         if candidate_result["action"] == "disambiguate":
             options = [c["text"] for c in candidate_result["candidates"][:2]]
             logger.info(f"low-confidence routing -> disambiguating between: {options}")
-            return "Which did you mean: " + " or ".join(options) + "?"
-        selected = candidate_result["candidates"][candidate_result["selected_index"]]
-        response = run_agent_loop(selected["text"])
+            response = "Which did you mean: " + " or ".join(options) + "?"
+            outcome = "disambiguate"
+        else:
+            selected = candidate_result["candidates"][candidate_result["selected_index"]]
+            response = run_agent_loop(selected["text"])
+            outcome = "executed"
     else:
         context = get_context()
         response = generate_direct_response(raw_text, context)
+        outcome = "answered"
 
     update_context("last_command", raw_text)
+    record_command(raw_text, intent_result["intent"], outcome)
     return response
 
 
