@@ -83,6 +83,27 @@ def _retry_delay(attempt: int) -> float:
     return MODEL_RETRY_DELAY_SECONDS * (2 ** (attempt - 1))
 
 
+def _normalize_api_response(payload):
+    """Accept both dict-like and object-like Ollama responses."""
+    if isinstance(payload, dict):
+        return payload
+    if hasattr(payload, "model_dump"):
+        try:
+            model_dump = payload.model_dump()
+            if isinstance(model_dump, dict):
+                return model_dump
+        except Exception:
+            pass
+    if hasattr(payload, "dict"):
+        try:
+            payload_dict = payload.dict()
+            if isinstance(payload_dict, dict):
+                return payload_dict
+        except Exception:
+            pass
+    return getattr(payload, "__dict__", {})
+
+
 def _embed_batch(texts):
     """Batch-embed a list of strings in a single call. Returns a list of
     numpy arrays, same length/order as `texts`; None per item on failure."""
@@ -98,9 +119,10 @@ def _embed_batch(texts):
     for attempt in range(1, MAX_MODEL_RETRIES + 1):
         try:
             response = ollama.embed(model=EMBED_MODEL_NAME, input=texts)
-            if not isinstance(response, dict):
-                raise ValueError("embedding response was not a dict")
-            embeddings = response.get("embeddings")
+            payload = _normalize_api_response(response)
+            embeddings = payload.get("embeddings")
+            if embeddings is None:
+                embeddings = getattr(response, "embeddings", None)
             if not isinstance(embeddings, list) or len(embeddings) != len(texts):
                 raise ValueError("embedding payload length mismatch")
             return [np.asarray(v, dtype=float) for v in embeddings]
@@ -189,12 +211,15 @@ def _generate_candidates(text):
                     think=False,
                     options={"temperature": TEMPERATURE},
                 )
-                if not isinstance(response, dict):
-                    raise ValueError("chat response was not a dict")
-                message = response.get("message", {})
+                payload = _normalize_api_response(response)
+                message = payload.get("message", {})
                 if not isinstance(message, dict):
-                    raise ValueError("chat message payload malformed")
+                    message = _normalize_api_response(message)
                 candidate_text = message.get("content")
+                if candidate_text is None:
+                    candidate_text = getattr(response, "message", None)
+                    if candidate_text is not None:
+                        candidate_text = getattr(candidate_text, "content", None)
                 if not isinstance(candidate_text, str):
                     raise ValueError("model returned non-string content")
                 normalized = candidate_text.strip()

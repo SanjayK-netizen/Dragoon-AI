@@ -20,6 +20,8 @@ import os
 import unittest
 from unittest.mock import patch
 
+os.environ.setdefault("DRAGOON_DISABLE_OLLAMA", "1")
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.candidates import generate_and_score  # noqa: E402
 
