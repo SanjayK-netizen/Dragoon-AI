@@ -24382,3 +24382,10 @@
 2026-09-15 21:00:20,432 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-15 21:00:32,133 | dragoon | INFO | intent=conversation text='hello'
 2026-09-15 21:00:35,160 | dragoon | INFO | response="Hello there! I'm Dragoon, your local smart assistant. How can I help you today?"
+2026-09-15 21:13:18,981 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:13:31,731 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 21:13:40,641 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Add 12 plus 7', 'Sum 12 plus 7']
+2026-09-15 21:13:40,641 | dragoon | INFO | response='Which did you mean: Add 12 plus 7 or Sum 12 plus 7?'
+2026-09-15 21:15:34,249 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:15:34,254 | dragoon | INFO | Entering listen loop (Ctrl+C to exit)
+2026-09-15 21:15:43,788 | dragoon | INFO | Shutting down
