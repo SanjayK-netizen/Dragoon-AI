@@ -17,6 +17,8 @@ exists to prevent.
 
 import sys
 import os
+import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.candidates import generate_and_score  # noqa: E402
@@ -69,6 +71,17 @@ AMBIGUOUS_COMMANDS = [
     "Put that away",
     "Deal with the reminder thing",
 ]
+
+
+class CandidateSafetyTests(unittest.TestCase):
+    def test_missing_ollama_falls_back_to_safe_autodecision(self):
+        with patch("core.candidates.ollama.chat", side_effect=Exception("model not found")):
+            with patch("core.candidates.ollama.embed", side_effect=Exception("model not found")):
+                clear_result = generate_and_score("Set a reminder for 5pm")
+                self.assertEqual(clear_result["action"], "auto_execute")
+
+                ambiguous_result = generate_and_score("Do that thing again")
+                self.assertEqual(ambiguous_result["action"], "disambiguate")
 
 
 def run_candidate_test():

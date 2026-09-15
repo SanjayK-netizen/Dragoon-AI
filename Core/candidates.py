@@ -20,6 +20,7 @@ look like confidence.
 import json
 import logging
 import os
+import time
 from datetime import datetime, timezone
 
 import numpy as np
@@ -28,6 +29,8 @@ import hashlib
 
 MODEL_NAME = "qwen3.5:2b"
 EMBED_MODEL_NAME = "qwen3-embedding:0.6b"
+MAX_MODEL_RETRIES = 3
+MODEL_RETRY_DELAY_SECONDS = 0.5
 
 logger = logging.getLogger("dragoon")
 
@@ -76,6 +79,10 @@ def _now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
+def _retry_delay(attempt: int) -> float:
+    return MODEL_RETRY_DELAY_SECONDS * (2 ** (attempt - 1))
+
+
 def _embed_batch(texts):
     """Batch-embed a list of strings in a single call. Returns a list of
     numpy arrays, same length/order as `texts`; None per item on failure."""
@@ -88,14 +95,20 @@ def _embed_batch(texts):
     if os.environ.get("DRAGOON_DISABLE_OLLAMA", "0") == "1":
         return [_deterministic_embed(t) for t in texts]
 
-    try:
-        response = ollama.embed(model=EMBED_MODEL_NAME, input=texts)
-        return [np.array(v) for v in response["embeddings"]]
-    except Exception as e:
-        logger.error(f"_embed_batch: embedding call failed for {len(texts)} texts: {e}")
-        # On failure, fall back to deterministic local embeddings rather than
-        # returning None which makes similarity metrics useless for tests.
-        return [_deterministic_embed(t) for t in texts]
+    for attempt in range(1, MAX_MODEL_RETRIES + 1):
+        try:
+            response = ollama.embed(model=EMBED_MODEL_NAME, input=texts)
+            if not isinstance(response, dict):
+                raise ValueError("embedding response was not a dict")
+            embeddings = response.get("embeddings")
+            if not isinstance(embeddings, list) or len(embeddings) != len(texts):
+                raise ValueError("embedding payload length mismatch")
+            return [np.asarray(v, dtype=float) for v in embeddings]
+        except Exception as exc:
+            if attempt == MAX_MODEL_RETRIES:
+                logger.exception("_embed_batch: embedding call failed after retries for %s texts", len(texts))
+                return [_deterministic_embed(t) for t in texts]
+            time.sleep(_retry_delay(attempt))
 
 
 def _deterministic_embed(text, dim=64):
@@ -129,6 +142,19 @@ def _keyword_overlap(candidate_text, known_command):
     return len(c_words & k_words) / len(k_words)
 
 
+def _fallback_candidates_for_text(text):
+    """Deterministic local fallback used when Ollama is unavailable or broken.
+    It preserves the intended safety behavior by returning canonical command
+    paraphrases ranked by keyword overlap rather than raw user text."""
+    scored = sorted(KNOWN_COMMANDS, key=lambda k: _keyword_overlap(text, k), reverse=True)
+    if not scored:
+        return [text]
+    top_score = _keyword_overlap(text, scored[0]) if scored else 0.0
+    if top_score >= 0.5:
+        return [scored[0]] * N_CANDIDATES
+    return [k for k in scored[:N_CANDIDATES]] or [text]
+
+
 def _generate_candidates(text):
     """Sample N_CANDIDATES interpretations of a command via temperature sampling."""
     candidates = []
@@ -155,24 +181,39 @@ def _generate_candidates(text):
                 for k in scored[:N_CANDIDATES]:
                     candidates.append(k)
             break
-        try:
-            response = ollama.chat(
-                model=MODEL_NAME,
-                messages=[{"role": "user", "content": prompt}],
-                think=False,
-                options={"temperature": TEMPERATURE},
-            )
-            candidate_text = response["message"]["content"].strip()
-            if candidate_text:
-                candidates.append(candidate_text)
-        except Exception as e:
-            logger.error(f"_generate_candidates: model call failed for text={text!r}: {e}")
+        for attempt in range(1, MAX_MODEL_RETRIES + 1):
+            try:
+                response = ollama.chat(
+                    model=MODEL_NAME,
+                    messages=[{"role": "user", "content": prompt}],
+                    think=False,
+                    options={"temperature": TEMPERATURE},
+                )
+                if not isinstance(response, dict):
+                    raise ValueError("chat response was not a dict")
+                message = response.get("message", {})
+                if not isinstance(message, dict):
+                    raise ValueError("chat message payload malformed")
+                candidate_text = message.get("content")
+                if not isinstance(candidate_text, str):
+                    raise ValueError("model returned non-string content")
+                normalized = candidate_text.strip()
+                if normalized:
+                    candidates.append(normalized)
+                    break
+                raise ValueError("model returned empty content")
+            except Exception as exc:
+                if attempt == MAX_MODEL_RETRIES:
+                    logger.exception("_generate_candidates: model call failed for text=%r", text)
+                    break
+                time.sleep(_retry_delay(attempt))
 
-    # Fallback only on total generation failure — previously this appended
-    # raw text almost every call (paraphrases rarely match verbatim), adding
-    # a near-always-ignored extra embedding call for no benefit.
+    # Fallback only on total generation failure. If Ollama is unavailable,
+    # use a deterministic known-command approximation rather than the raw text,
+    # because the raw text rarely matches the canonical command vocabulary and
+    # can silently poison the confidence score.
     if not candidates:
-        candidates.append(text)
+        candidates = _fallback_candidates_for_text(text)
     return candidates
 
 
@@ -212,6 +253,10 @@ def generate_and_score(text: str) -> dict:
     # disambiguate to avoid silent wrong-executions. This is a defensive rule
     # for Phase 2 where ambiguous inputs must never be auto-executed.
     vague_tokens = {"thing", "things", "that", "those", "again", "usual", "usuals", "stuff"}
+    if not isinstance(text, str) or not text.strip():
+        logger.warning("generate_and_score: empty or invalid input received")
+        return {"candidates": [], "selected_index": None, "action": "disambiguate"}
+
     lower = text.lower()
     raw_candidates = _generate_candidates(text)
     if any(tok in lower.split() for tok in vague_tokens):
