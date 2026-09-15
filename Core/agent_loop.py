@@ -10,11 +10,23 @@ launch destructive tools; it starts with low-risk functions only.
 
 import json
 import logging
+import re
+from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
+from Tools.register import REGISTRY, TOOL_SCHEMAS
 
 logger = logging.getLogger("dragoon")
 
-VALID_STATES = ["PARSE", "SELECT_TOOL", "EXECUTE", "VERIFY", "RESPOND"]
+class AgentState(Enum):
+    PARSE = "PARSE"
+    SELECT_TOOL = "SELECT_TOOL"
+    EXECUTE = "EXECUTE"
+    VERIFY = "VERIFY"
+    RESPOND = "RESPOND"
+
+
+VALID_STATES = [state.value for state in AgentState]
 
 
 def _safe_math(expr: str) -> float:
@@ -28,10 +40,39 @@ def _safe_math(expr: str) -> float:
 
 
 def _default_registry() -> Dict[str, Callable[..., Any]]:
-    return {
-        "calculate": lambda value: _safe_math(str(value)),
-        "get_time": lambda value=None: "The current time is unavailable without the system clock wrapper.",
-    }
+    return REGISTRY.copy()
+
+
+def _coerce_arg(value: Any) -> Any:
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.lower() in {"true", "false"}:
+            return stripped.lower() == "true"
+        if stripped.lower() in {"none", "null"}:
+            return None
+        try:
+            if re.fullmatch(r"[-+]?\d+", stripped):
+                return int(stripped)
+            if re.fullmatch(r"[-+]?\d*\.\d+", stripped):
+                return float(stripped)
+        except Exception:
+            pass
+    return value
+
+
+def _parse_inline_args(raw_args: str) -> Dict[str, Any]:
+    if not raw_args or not raw_args.strip():
+        return {}
+
+    args: Dict[str, Any] = {}
+    for piece in re.split(r"\s+(?:and\s+)?", raw_args.strip()):
+        if not piece:
+            continue
+        if "=" not in piece:
+            continue
+        key, value = piece.split("=", 1)
+        args[key.strip()] = _coerce_arg(value.strip().strip("\"'"))
+    return args
 
 
 def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., Any]]] = None) -> Dict[str, Any]:
@@ -60,15 +101,38 @@ def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., 
         except Exception:
             pass
 
+        remainder = text[len("Use "):].strip()
+        match = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)\s*(?:with\s+)?(.+)?$", remainder)
+        if match:
+            tool_name = match.group(1)
+            raw_args = (match.group(2) or "").strip()
+            if tool_name in registry:
+                return {"tool": tool_name, "args": _parse_inline_args(raw_args)}
+
     raise ValueError(f"No supported tool match for input: {text!r}")
 
 
 def _verify_tool_result(tool: str, result: Any) -> bool:
     if tool == "calculate":
         return isinstance(result, (int, float))
-    if tool == "get_time":
+    if tool == "get_time" or tool == "open_local_file":
         return isinstance(result, str) and len(result) > 0
+    if tool == "set_reminder":
+        return isinstance(result, dict) and result.get("ok") is True and result.get("id") is not None
     return result is not None
+
+
+def _validate_args(tool: str, args: Any) -> None:
+    if not isinstance(args, dict):
+        return
+    schema = TOOL_SCHEMAS.get(tool)
+    if schema is None:
+        return
+    keys = set(args)
+    missing = schema["required"] - keys
+    unknown = keys - schema["required"] - schema["optional"]
+    if missing or unknown:
+        raise ValueError(f"invalid arguments for {tool}: missing={sorted(missing)}, unknown={sorted(unknown)}")
 
 
 def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., Any]]] = None) -> str:
@@ -78,24 +142,28 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
     last_error = None
 
     try:
-        for state in ["PARSE", "SELECT_TOOL", "EXECUTE", "VERIFY", "RESPOND"]:
-            if state == "PARSE":
+        for state in AgentState:
+            if state is AgentState.PARSE:
                 parsed = _parse_tool_call(text, registry)
                 tool_name = parsed["tool"]
                 args = parsed["args"]
-            elif state == "SELECT_TOOL":
+            elif state is AgentState.SELECT_TOOL:
                 if tool_name not in registry:
                     raise ValueError(f"tool {tool_name!r} is not in the registry")
-            elif state == "EXECUTE":
+                _validate_args(tool_name, args)
+            elif state is AgentState.EXECUTE:
                 try:
-                    result = registry[tool_name](**args) if isinstance(args, dict) else registry[tool_name](args)
+                    if isinstance(args, dict):
+                        result = registry[tool_name](**args)
+                    else:
+                        result = registry[tool_name](args)
                 except Exception as exc:
                     last_error = str(exc)
                     raise
-            elif state == "VERIFY":
+            elif state is AgentState.VERIFY:
                 if not _verify_tool_result(tool_name, result):
                     raise ValueError(f"verification failed for tool {tool_name!r}")
-            elif state == "RESPOND":
+            elif state is AgentState.RESPOND:
                 return str(result)
 
         return str(result)
@@ -108,7 +176,11 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
             parsed = _parse_tool_call(text, registry)
             tool_name = parsed["tool"]
             args = parsed["args"]
-            result = registry[tool_name](**args) if isinstance(args, dict) else registry[tool_name](args)
+            _validate_args(tool_name, args)
+            if isinstance(args, dict):
+                result = registry[tool_name](**args)
+            else:
+                result = registry[tool_name](args)
             if not _verify_tool_result(tool_name, result):
                 raise ValueError(f"verification failed for tool {tool_name!r}")
             return str(result)
