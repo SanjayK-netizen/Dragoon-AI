@@ -24389,3 +24389,41 @@
 2026-09-15 21:15:34,249 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-15 21:15:34,254 | dragoon | INFO | Entering listen loop (Ctrl+C to exit)
 2026-09-15 21:15:43,788 | dragoon | INFO | Shutting down
+2026-09-15 21:36:23,542 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:36:38,447 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 21:36:47,861 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Add numbers to sum', 'Compute 12 plus 7']
+2026-09-15 21:36:47,861 | dragoon | INFO | response='Which did you mean: Add numbers to sum or Compute 12 plus 7?'
+2026-09-15 21:37:47,510 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:37:53,147 | dragoon | INFO | intent=command text='Add 12 to 7'
+2026-09-15 21:38:01,377 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Add 12 to 7', 'Add twelve to seven']
+2026-09-15 21:38:01,380 | dragoon | INFO | response='Which did you mean: Add 12 to 7 or Add twelve to seven?'
+2026-09-15 21:38:47,007 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:38:52,570 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 21:38:59,900 | dragoon | ERROR | run_agent_loop failed on retry for text='Calculate 12 plus 7'
+Traceback (most recent call last):
+  File "D:\Dragoon-AI\core\agent_loop.py", line 174, in run_agent_loop
+    result = registry[tool_name](**args)
+  File "D:\Dragoon-AI\Tools\register.py", line 33, in calculate
+    return _safe_math(str(value))
+  File "D:\Dragoon-AI\Tools\register.py", line 20, in _safe_math
+    raise ValueError("unsafe or malformed math expression")
+ValueError: unsafe or malformed math expression
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Dragoon-AI\core\agent_loop.py", line 198, in run_agent_loop
+    result = registry[tool_name](**args)
+  File "D:\Dragoon-AI\Tools\register.py", line 33, in calculate
+    return _safe_math(str(value))
+  File "D:\Dragoon-AI\Tools\register.py", line 20, in _safe_math
+    raise ValueError("unsafe or malformed math expression")
+ValueError: unsafe or malformed math expression
+2026-09-15 21:38:59,922 | dragoon | INFO | response='I hit a tool error while executing that command: unsafe or malformed math expression'
+2026-09-15 21:39:28,544 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:39:29,791 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 21:39:37,688 | dragoon | INFO | low-confidence routing -> disambiguating between: ['+19', 'calculate 12 plus 7']
+2026-09-15 21:39:37,690 | dragoon | INFO | response='Which did you mean: +19 or calculate 12 plus 7?'
+2026-09-15 21:40:13,196 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:40:14,348 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 21:40:18,828 | dragoon | INFO | response='19.0'

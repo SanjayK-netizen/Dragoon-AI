@@ -69,6 +69,13 @@ def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., 
     registry = tool_registry or _default_registry()
     lowered = text.lower().strip()
 
+    addition_match = re.match(r"^(?:add|sum)\s+(.+?)\s+(?:and|to|plus)\s+(.+)$", text.strip(), re.IGNORECASE)
+    if addition_match and all(re.search(r"\d", part) for part in addition_match.groups()):
+        return {
+            "tool": "calculate",
+            "args": {"value": f"{addition_match.group(1)} + {addition_match.group(2)}"},
+        }
+
     if not text.strip().startswith("Use ") and (
         "calculate" in lowered or any(op in lowered for op in ["+", "-", "*", "/", "%"])
     ):
@@ -77,6 +84,10 @@ def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., 
             if expr.lower().startswith(prefix):
                 expr = expr[len(prefix):]
                 break
+        expr = re.sub(r"\bplus\b", "+", expr, flags=re.IGNORECASE)
+        expr = re.sub(r"\b(minus|less)\b", "-", expr, flags=re.IGNORECASE)
+        expr = re.sub(r"\b(times|multiplied by)\b", "*", expr, flags=re.IGNORECASE)
+        expr = re.sub(r"\b(divided by|over)\b", "/", expr, flags=re.IGNORECASE)
         return {"tool": "calculate", "args": {"value": expr.strip()}}
 
     reminder_match = re.match(r"^(?:set|create) a reminder\s+(?:to\s+)?(.+)$", text.strip(), re.IGNORECASE)

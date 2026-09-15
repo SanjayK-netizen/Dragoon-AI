@@ -88,6 +88,9 @@ def _is_recent(timestamp: str, *, max_age_hours: int = 24) -> bool:
     except (TypeError, ValueError):
         return False
 
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+
     cutoff = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
     return parsed.astimezone(timezone.utc) >= cutoff
 

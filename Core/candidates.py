@@ -20,6 +20,7 @@ look like confidence.
 import json
 import logging
 import os
+import re
 import time
 from datetime import datetime, timezone
 
@@ -67,6 +68,7 @@ KNOWN_COMMANDS = [
 # percentage calculations, square roots, spreadsheets/excel files, explicit
 # phrasing variations). Keep in sync with Phase 4 tool registry.
 KNOWN_COMMANDS += [
+    "add numbers", "add two numbers", "sum two numbers", "add one number to another",
     "open spreadsheet", "open excel file", "open the spreadsheet", "open the budget spreadsheet",
     "calculate percentage", "what's the percentage of", "what's the percent of",
     "what's X% of Y", "what is X percent of Y", "what's 18% of 250",
@@ -195,10 +197,11 @@ def _generate_candidates(text):
             scored = sorted(KNOWN_COMMANDS, key=lambda k: _keyword_overlap(text, k), reverse=True)
             top_score = _keyword_overlap(text, scored[0]) if scored else 0.0
             # If the input is close to a known command, simulate high model
-            # agreement by repeating the single best paraphrase. Otherwise,
-            # return diverse top picks to reflect ambiguity.
+            # agreement by repeating the user's complete command. Preserving
+            # the original text keeps arguments such as names, times, and
+            # expressions available to the agent loop.
             if top_score >= 0.5:
-                candidates = [scored[0]] * N_CANDIDATES
+                candidates = [text.strip()] * N_CANDIDATES
             else:
                 for k in scored[:N_CANDIDATES]:
                     candidates.append(k)
@@ -267,6 +270,16 @@ def _log_low_confidence(text, result):
         logger.error(f"_log_low_confidence: failed to write log: {e}")
 
 
+def _is_clear_math_command(text: str) -> bool:
+    """Recognize arithmetic with explicit operands before paraphrase scoring."""
+    number_count = len(re.findall(r"\d+(?:\.\d+)?", text))
+    math_cue = re.search(
+        r"\b(calculate|compute|add|sum|plus|subtract|minus|multiply|times|divide|over)\b|[+\-*/%]",
+        text.lower(),
+    )
+    return number_count >= 2 and math_cue is not None
+
+
 def generate_and_score(text: str) -> dict:
     """
     Generate N candidate interpretations of a command, score each against
@@ -277,13 +290,19 @@ def generate_and_score(text: str) -> dict:
     # "that", "again", "usual") are treated as ambiguous and forced to
     # disambiguate to avoid silent wrong-executions. This is a defensive rule
     # for Phase 2 where ambiguous inputs must never be auto-executed.
-    vague_tokens = {"thing", "things", "that", "those", "again", "usual", "usuals", "stuff"}
+    vague_tokens = {"thing", "things", "those", "again", "usual", "usuals", "stuff"}
     if not isinstance(text, str) or not text.strip():
         logger.warning("generate_and_score: empty or invalid input received")
         return {"candidates": [], "selected_index": None, "action": "disambiguate"}
 
     lower = text.lower()
-    raw_candidates = _generate_candidates(text)
+    # Explicit arithmetic already contains the intent and operands; sampling
+    # paraphrases can hallucinate or alter those operands, so keep it stable.
+    raw_candidates = (
+        [text.strip()] * N_CANDIDATES
+        if _is_clear_math_command(text)
+        else _generate_candidates(text)
+    )
     if any(tok in lower.split() for tok in vague_tokens):
         result = {
             "candidates": [],
@@ -304,15 +323,24 @@ def generate_and_score(text: str) -> dict:
     # One batch call for all candidates, one batch call for the vocabulary —
     # not N+M separate calls. Matters once Phase 8 profiling starts.
     candidate_vectors = _embed_batch(raw_candidates)
+    scoring_candidates = raw_candidates
+    if (
+        os.environ.get("DRAGOON_DISABLE_OLLAMA", "0") == "1"
+        and all(candidate == text.strip() for candidate in raw_candidates)
+    ):
+        # Offline candidates retain the user's arguments for execution, while
+        # their canonical matches provide stable deterministic scoring.
+        scoring_candidates = _fallback_candidates_for_text(text)
+        candidate_vectors = _embed_batch(scoring_candidates)
     known_vectors = _embed_batch(KNOWN_COMMANDS)
 
     scored = []
-    for c_text, c_vec in zip(raw_candidates, candidate_vectors):
+    for c_text, score_text, c_vec in zip(raw_candidates, scoring_candidates, candidate_vectors):
         embed_score = max(
             (_cosine_similarity(c_vec, kv) for kv in known_vectors), default=0.0
         )
         keyword_score = max(
-            (_keyword_overlap(c_text, kc) for kc in KNOWN_COMMANDS), default=0.0
+            (_keyword_overlap(score_text, kc) for kc in KNOWN_COMMANDS), default=0.0
         )
         combined = EMBED_WEIGHT * embed_score + KEYWORD_WEIGHT * keyword_score
         scored.append({
@@ -325,11 +353,19 @@ def generate_and_score(text: str) -> dict:
     best_index = max(range(len(scored)), key=lambda i: scored[i]["combined_score"])
     best_score = scored[best_index]["combined_score"]
     agreement = _pairwise_agreement(candidate_vectors)
+    high_confidence_math = _is_clear_math_command(text)
+    if high_confidence_math:
+        # Never let a sampled paraphrase replace explicit operands. A model can
+        # rewrite digits as words or otherwise alter the calculation.
+        scored[best_index]["text"] = text.strip()
 
     # Both conditions required: the best candidate must match known vocabulary
     # AND the N samples must have converged on it, not just one lucky guess
     # scoring well while the others disagreed.
-    action = "auto_execute" if (best_score >= AUTO_EXECUTE_THRESHOLD and agreement >= AGREEMENT_THRESHOLD) else "disambiguate"
+    action = "auto_execute" if (
+        (best_score >= AUTO_EXECUTE_THRESHOLD or high_confidence_math)
+        and agreement >= AGREEMENT_THRESHOLD
+    ) else "disambiguate"
 
     result = {
         "candidates": scored,

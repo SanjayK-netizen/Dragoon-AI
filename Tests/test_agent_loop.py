@@ -19,6 +19,10 @@ class AgentLoopTests(unittest.TestCase):
         result = run_agent_loop("Calculate 12 + 7")
         self.assertIn("19", result)
 
+    def test_spoken_addition_candidate_executes(self):
+        result = run_agent_loop("Add 12 to 7")
+        self.assertIn("19", result)
+
     def test_natural_language_safe_tools_execute(self):
         self.assertIn("1081", run_agent_loop("Calculate 47 times 23"))
         with patch.dict(os.environ, {"DRAGOON_DATA_DIR": tempfile.mkdtemp(prefix="dragoon_agent_")}):

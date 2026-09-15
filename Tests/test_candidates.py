@@ -85,6 +85,18 @@ class CandidateSafetyTests(unittest.TestCase):
                 ambiguous_result = generate_and_score("Do that thing again")
                 self.assertEqual(ambiguous_result["action"], "disambiguate")
 
+    def test_clear_command_keeps_arguments_in_selected_candidate(self):
+        result = generate_and_score("Text mom that I'll be late")
+
+        self.assertEqual(result["action"], "auto_execute")
+        selected = result["candidates"][result["selected_index"]]
+        self.assertEqual(selected["text"], "Text mom that I'll be late")
+
+    def test_ambiguous_reference_without_supported_action_stays_safe(self):
+        result = generate_and_score("Fix that")
+
+        self.assertEqual(result["action"], "disambiguate")
+
 
 def run_candidate_test():
     print(f"=== CLEAR COMMANDS ({len(CLEAR_COMMANDS)}) ===\n")
