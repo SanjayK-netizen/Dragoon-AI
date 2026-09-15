@@ -61,11 +61,14 @@ def _now_iso():
 try:
     from audio_io.stt import transcribe_audio
 except ImportError:
-    def transcribe_audio():
-        logging.getLogger("dragoon").warning(
-            "audio_io.stt not implemented yet (Phase 0/5) — stub returns empty text"
-        )
-        return ""
+    try:
+        from IO.stt import transcribe_audio
+    except ImportError:
+        def transcribe_audio():
+            logging.getLogger("dragoon").warning(
+                "speech input is unavailable — install SpeechRecognition and PyAudio"
+            )
+            return ""
 
 try:
     from core.intent import classify_intent, generate_direct_response
@@ -116,8 +119,11 @@ except ImportError:
 try:
     from audio_io.tts import speak
 except ImportError:
-    def speak(text):
-        pass  # no-op until Phase 0/5 wires real TTS; response is still printed to console
+    try:
+        from IO.tts import speak
+    except ImportError:
+        def speak(text):
+            logging.getLogger("dragoon").warning("speech output is unavailable")
 
 
 def setup_logging(log_level):

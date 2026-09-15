@@ -24379,3 +24379,6 @@
 2026-09-15 20:54:04,856 | dragoon | INFO | intent=command text='Calculate 12 + 7'
 2026-09-15 20:54:13,213 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Add twelve to seven.', '+19']
 2026-09-15 20:54:13,213 | dragoon | INFO | response='Which did you mean: Add twelve to seven. or +19?'
+2026-09-15 21:00:20,432 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 21:00:32,133 | dragoon | INFO | intent=conversation text='hello'
+2026-09-15 21:00:35,160 | dragoon | INFO | response="Hello there! I'm Dragoon, your local smart assistant. How can I help you today?"

@@ -1,0 +1,106 @@
+{
+  "total_configs": 64,
+  "safe_count": 64,
+  "top_safe": [
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.6,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.65,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.7,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.75,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.8,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.85,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.9,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.6,
+      "AGREEMENT_THRESHOLD": 0.95,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.65,
+      "AGREEMENT_THRESHOLD": 0.6,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    },
+    {
+      "AUTO_EXECUTE_THRESHOLD": 0.65,
+      "AGREEMENT_THRESHOLD": 0.65,
+      "clear_correct": 24,
+      "clear_rate": 0.96,
+      "ambiguous_safe": 15,
+      "ambiguous_rate": 1.0,
+      "silent_wrong_count": 0,
+      "silent_wrong_examples": []
+    }
+  ]
+}
