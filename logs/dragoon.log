@@ -24370,3 +24370,12 @@
 2026-08-04 09:32:46,116 | dragoon | WARNING | audio_io.stt not implemented yet (Phase 0/5) — stub returns empty text
 2026-08-04 09:32:46,117 | dragoon | WARNING | audio_io.stt not implemented yet (Phase 0/5) — stub returns empty text
 2026-08-04 09:32:46,119 | dragoon | INFO | Shutting down
+2026-09-15 20:53:35,123 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 20:53:35,126 | dragoon | WARNING | core.intent not implemented yet (Phase 1) — stub classifies everything as conversation
+2026-09-15 20:53:35,126 | dragoon | INFO | intent=conversation text='Calculate 12 + 7'
+2026-09-15 20:53:35,126 | dragoon | WARNING | core.memory not implemented yet (Phase 3) — stub returns empty context
+2026-09-15 20:53:35,126 | dragoon | INFO | response='(stub — Phase 1 not implemented) You said: Calculate 12 + 7'
+2026-09-15 20:53:52,746 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-15 20:54:04,856 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-15 20:54:13,213 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Add twelve to seven.', '+19']
+2026-09-15 20:54:13,213 | dragoon | INFO | response='Which did you mean: Add twelve to seven. or +19?'

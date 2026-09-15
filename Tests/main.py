@@ -33,8 +33,13 @@ dragoon/
 import argparse
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
+
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 # Confirmed via Phase 0 validation (two independent runs): avg total latency
 # ~3.0-3.2s, 100% JSON/tool-call parse rate. qwen3.5:4b was not tested viable

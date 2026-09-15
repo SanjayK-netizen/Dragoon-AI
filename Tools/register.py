@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from datetime import datetime
+import math
+import re
 from pathlib import Path
 from typing import Any, Callable, Dict
 
@@ -10,6 +12,10 @@ from Tools.reminder import set_reminder
 
 
 def _safe_math(expr: str) -> float:
+    expr = expr.lower().replace("times", "*").replace("multiplied by", "*")
+    square_root = re.fullmatch(r"square root of\s+([0-9]+(?:\.[0-9]+)?)", expr.strip())
+    if square_root:
+        return math.sqrt(float(square_root.group(1)))
     if not expr or not all(ch.isdigit() or ch in " +-*/().%" for ch in expr):
         raise ValueError("unsafe or malformed math expression")
     try:

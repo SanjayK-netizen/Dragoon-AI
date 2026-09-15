@@ -1,6 +1,8 @@
 import os
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -16,6 +18,13 @@ class AgentLoopTests(unittest.TestCase):
     def test_calculation_tool_executes(self):
         result = run_agent_loop("Calculate 12 + 7")
         self.assertIn("19", result)
+
+    def test_natural_language_safe_tools_execute(self):
+        self.assertIn("1081", run_agent_loop("Calculate 47 times 23"))
+        with patch.dict(os.environ, {"DRAGOON_DATA_DIR": tempfile.mkdtemp(prefix="dragoon_agent_")}):
+            reminder = run_agent_loop("Set a reminder to take medicine at 9am")
+        self.assertIn("take medicine", reminder)
+        self.assertIn("9am", reminder)
 
     def test_invalid_builtin_arguments_are_rejected(self):
         result = run_agent_loop('Use {"tool": "calculate", "args": {"unexpected": 1}}')

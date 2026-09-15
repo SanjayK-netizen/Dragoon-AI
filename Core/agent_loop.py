@@ -12,7 +12,7 @@ import json
 import logging
 import re
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from Tools.register import REGISTRY, TOOL_SCHEMAS
 
@@ -27,16 +27,6 @@ class AgentState(Enum):
 
 
 VALID_STATES = [state.value for state in AgentState]
-
-
-def _safe_math(expr: str) -> float:
-    if not expr or not all(ch.isdigit() or ch in " +-*/().%" for ch in expr):
-        raise ValueError("unsafe or malformed math expression")
-    try:
-        value = eval(expr, {"__builtins__": {}}, {})
-    except Exception as exc:  # pragma: no cover - defensive guard
-        raise ValueError(f"math evaluation failed: {exc}") from exc
-    return float(value)
 
 
 def _default_registry() -> Dict[str, Callable[..., Any]]:
@@ -79,13 +69,33 @@ def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., 
     registry = tool_registry or _default_registry()
     lowered = text.lower().strip()
 
-    if "calculate" in lowered or any(op in lowered for op in ["+", "-", "*", "/", "%"]):
+    if not text.strip().startswith("Use ") and (
+        "calculate" in lowered or any(op in lowered for op in ["+", "-", "*", "/", "%"])
+    ):
         expr = text
         for prefix in ["calculate ", "compute ", "what is "]:
             if expr.lower().startswith(prefix):
                 expr = expr[len(prefix):]
                 break
         return {"tool": "calculate", "args": {"value": expr.strip()}}
+
+    reminder_match = re.match(r"^(?:set|create) a reminder\s+(?:to\s+)?(.+)$", text.strip(), re.IGNORECASE)
+    if reminder_match:
+        reminder_text = reminder_match.group(1).strip()
+        due_match = re.match(r"^(.+?)\s+at\s+(.+)$", reminder_text, re.IGNORECASE)
+        if due_match:
+            reminder_text, due = due_match.groups()
+        else:
+            for_prefix = re.match(r"^for\s+(.+)$", reminder_text, re.IGNORECASE)
+            if for_prefix:
+                reminder_text, due = "Reminder", for_prefix.group(1)
+            else:
+                due = "unspecified time"
+        return {"tool": "set_reminder", "args": {"text": reminder_text.strip(), "due": due.strip()}}
+
+    file_match = re.match(r"^(?:open|read) (?:the )?(?:local )?file\s+(.+)$", text.strip(), re.IGNORECASE)
+    if file_match:
+        return {"tool": "open_local_file", "args": {"path": file_match.group(1).strip()}}
 
     if "time" in lowered and ("what time" in lowered or "current time" in lowered):
         return {"tool": "get_time", "args": {}}
