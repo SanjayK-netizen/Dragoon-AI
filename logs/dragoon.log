@@ -24430,3 +24430,6 @@ ValueError: unsafe or malformed math expression
 2026-09-15 22:24:30,631 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-15 22:24:43,608 | dragoon | INFO | intent=question text='What is 34 + 98?'
 2026-09-15 22:24:49,298 | dragoon | INFO | response="The answer to your math question is 132. I'm Dragoon, and I'll help with any math or voice tasks you need!"
+2026-09-16 08:49:38,760 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-16 08:50:00,672 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-16 08:50:22,531 | dragoon | INFO | response='19.0'
