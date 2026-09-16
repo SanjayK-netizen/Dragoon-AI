@@ -13,86 +13,192 @@ than propagating an exception up into main.py's orchestration loop.
  
 import json
 import logging
+import re
+import time
 from datetime import datetime, timezone
- 
+
 import ollama
- 
-# Keep this in sync with main.py's MODEL_NAME — confirmed via Phase 0
-# (5 passing runs: ~1.1-3.7s first-token, ~3.0-6.1s total, 7/7 JSON).
+
+# Keep this in sync with main.py's MODEL_NAME — confirmed via Phase 0.
 MODEL_NAME = "qwen3.5:2b"
- 
+MODEL_RETRY_ATTEMPTS = 2
+
 logger = logging.getLogger("dragoon")
- 
+
 VALID_INTENTS = {"command", "question", "conversation"}
- 
+
 CLASSIFY_PROMPT_TEMPLATE = (
     "Classify the intent of this text as JSON with a single key \"intent\" whose value is "
     "exactly one of: command, question, conversation.\n"
     "- command: asks the assistant to DO something with a real side effect (set a reminder, "
-    "open a file, calculate, control something, send a message)\n"
-    "- question: asks for factual information, no action required\n"
+    "open a file, calculate, control something, send a message, start a timer)\n"
+    "- question: asks for factual information or an answer with no side effect\n"
     "- conversation: greetings, small talk, and CREATIVE/ENTERTAINMENT requests — jokes, "
-    "stories, poems, pep talks, casual chat. These have no side effect and no factual answer, "
-    "so they are conversation, not command or question, even though they're phrased as requests.\n"
-    "IMPORTANT: \"Can you...\", \"Could you...\", \"Will you...\" at the start of a sentence is a "
-    "POLITE REQUEST FORM, not a literal question about ability. Classify by what follows, not "
-    "by the \"Can you\" wrapper itself. \"Can you tell me a joke?\" is a request for a joke "
-    "(conversation), NOT a question about whether you are capable of telling jokes.\n"
-    "Examples: \"Tell me a joke\" -> conversation. \"Can you tell me a joke?\" -> conversation. "
-    "\"Write me a poem\" -> conversation. \"Can you set a reminder for 5pm?\" -> command "
-    "(the \"can you\" wrapper doesn't change that it's a real action request).\n"
+    "stories, poems, pep talks, casual chat, emotional support, social check-ins.\n"
+    "IMPORTANT: treat polite wrappers like 'Can you...', 'Could you...', 'Would you...' as a request "
+    "for the action that follows, not as a question about ability.\n"
+    "Examples:\n"
+    "- 'Tell me a joke' -> conversation\n"
+    "- 'Can you tell me a joke?' -> conversation\n"
+    "- 'Write me a poem' -> conversation\n"
+    "- 'How are you doing today?' -> conversation\n"
+    "- 'What time is it?' -> question\n"
+    "- 'How do I reset my password?' -> question\n"
+    "- 'Can you set a reminder for 5pm?' -> command\n"
     "Text: \"{text}\"\n"
     "Respond with JSON only, no other text."
 )
- 
- 
+
+QUESTION_WORD_RE = re.compile(
+    r"\b(what|who|when|where|why|how|is|are|do|does|did|can|could|would|should|which|whom|whose)\b",
+    re.IGNORECASE,
+)
+
+CONVERSATION_HINTS = (
+    "hello",
+    "hi ",
+    "hey",
+    "good morning",
+    "goodnight",
+    "how are you",
+    "how's it going",
+    "what's up",
+    "tell me a joke",
+    "tell me a story",
+    "write me a poem",
+    "give me a pep talk",
+    "keep me company",
+    "i'm bored",
+    "thanks",
+    "thank you",
+    "never mind",
+    "just testing you out",
+    "i'm feeling stressed",
+    "that sounds great",
+    "i'm not sure what to do next",
+    "that's really helpful",
+)
+
+COMMAND_HINTS = (
+    "set a reminder",
+    "remind me",
+    "open",
+    "calculate",
+    "add ",
+    "send a message",
+    "text ",
+    "start a timer",
+    "check the weather",
+    "create a note",
+    "book a meeting",
+    "save this",
+    "lock",
+    "draft an email",
+    "delete",
+    "remove",
+    "turn off",
+    "play",
+    "move ",
+)
+
+
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
- 
- 
+
+
+def _heuristic_intent(text: str) -> str:
+    """Fallback classifier for model failure or transient recovery."""
+    value = (text or "").strip().lower()
+    if not value:
+        return "conversation"
+
+    if any(hint in value for hint in CONVERSATION_HINTS):
+        return "conversation"
+
+    if re.search(r"\b(can you|could you|would you)\b.*\b(tell me a joke|tell me a story|write me a poem|give me a pep talk|keep me company)\b", value):
+        return "conversation"
+
+    if "?" in value or QUESTION_WORD_RE.search(value):
+        return "question"
+
+    if any(hint in value for hint in COMMAND_HINTS):
+        return "command"
+
+    return "conversation"
+
+
+def _parse_model_intent(raw_content: object) -> str:
+    """Parse JSON response and normalize valid labels."""
+    if raw_content is None:
+        raise ValueError("empty model response")
+
+    text = str(raw_content).strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+
+    parsed = json.loads(text)
+    if not isinstance(parsed, dict):
+        raise ValueError("model intent payload is not an object")
+
+    candidate = str(parsed.get("intent", "")).strip().lower()
+    if candidate in VALID_INTENTS:
+        return candidate
+    raise ValueError(f"out-of-schema intent: {candidate!r}")
+
+
 def classify_intent(text: str) -> dict:
     """
     Classify raw_text into one of VALID_INTENTS.
- 
-    Falls back to "conversation" on any parse failure, model error, or an
-    out-of-schema label — main.py's routing assumes intent is always one
-    of the three valid values, so this must never return anything else.
+
+    Retries once on transient model failures and falls back to a conservative
+    lexical heuristic when the model is unavailable or returns malformed data.
     """
     prompt = CLASSIFY_PROMPT_TEMPLATE.format(text=text)
-    intent = "conversation"  # safe default if anything below fails
- 
-    try:
-        response = ollama.chat(
-            model=MODEL_NAME,
-            messages=[{"role": "user", "content": prompt}],
-            format="json",
-            think=False,  # Phase 0 finding: leaving this on cost 10-100x latency
-            options={"temperature": 0.1},  # low temp — classification should be stable, not creative
-        )
-        raw_content = response["message"]["content"]
-        parsed = json.loads(raw_content)
-        candidate = str(parsed.get("intent", "")).strip().lower()
- 
-        if candidate in VALID_INTENTS:
-            intent = candidate
-        else:
-            logger.warning(
-                f"classify_intent: model returned out-of-schema intent {candidate!r} "
-                f"for text={text!r} — defaulting to conversation"
+    intent = "conversation"
+
+    for attempt in range(MODEL_RETRY_ATTEMPTS):
+        try:
+            response = ollama.chat(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                format="json",
+                think=False,
+                options={"temperature": 0.1},
             )
- 
-    except json.JSONDecodeError as e:
-        logger.error(f"classify_intent: unparseable JSON for text={text!r}: {e}")
-    except Exception as e:
-        logger.error(f"classify_intent: model call failed for text={text!r}: {e}")
- 
+            raw_content = response["message"]["content"]
+            intent = _parse_model_intent(raw_content)
+            return {
+                "intent": intent,
+                "raw_text": text,
+                "timestamp": _now_iso(),
+            }
+        except Exception as exc:
+            logger.warning(
+                "classify_intent attempt %s/%s failed for text=%r: %s",
+                attempt + 1,
+                MODEL_RETRY_ATTEMPTS,
+                text,
+                exc,
+            )
+            if attempt + 1 < MODEL_RETRY_ATTEMPTS:
+                time.sleep(0.5)
+                continue
+            intent = _heuristic_intent(text)
+            logger.warning(
+                "classify_intent: using heuristic fallback for text=%r -> %s",
+                text,
+                intent,
+            )
+            break
+
     return {
         "intent": intent,
         "raw_text": text,
         "timestamp": _now_iso(),
     }
- 
- 
+
+
 def generate_direct_response(text: str, context: dict) -> str:
     """
     Direct response for question/conversation intents.
