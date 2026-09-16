@@ -81,13 +81,14 @@ CONVERSATION_HINTS = (
 
 COMMAND_HINTS = (
     "set a reminder",
+    "set a timer",
+    "start a timer",
     "remind me",
     "open",
     "calculate",
     "add ",
     "send a message",
     "text ",
-    "start a timer",
     "check the weather",
     "create a note",
     "book a meeting",
@@ -99,6 +100,9 @@ COMMAND_HINTS = (
     "turn off",
     "play",
     "move ",
+    "schedule",
+    "timer",
+    "reminder",
 )
 
 
@@ -120,6 +124,9 @@ def _heuristic_intent(text: str) -> str:
 
     if "?" in value or QUESTION_WORD_RE.search(value):
         return "question"
+
+    if re.search(r"\b(set|start|create|schedule)\b.*\b(timer|reminder)\b|\b(timer|reminder)\b.*\b(for|in)\b", value):
+        return "command"
 
     if any(hint in value for hint in COMMAND_HINTS):
         return "command"
