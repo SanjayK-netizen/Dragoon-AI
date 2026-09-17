@@ -17,7 +17,10 @@ import re
 import time
 from datetime import datetime, timezone
 
-import ollama
+try:
+    import ollama
+except ImportError:
+    ollama = None
 
 # Keep this in sync with main.py's MODEL_NAME — confirmed via Phase 0.
 MODEL_NAME = "qwen3.5:2b"
@@ -105,6 +108,11 @@ COMMAND_HINTS = (
     "reminder",
 )
 
+ARITHMETIC_RE = re.compile(
+    r"(?:\b(?:what is|calculate|compute)\b.*)?\d\s*(?:[+\-*/%]|plus|minus|times|divided by)\s*\d",
+    re.IGNORECASE,
+)
+
 
 def _now_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -121,6 +129,9 @@ def _heuristic_intent(text: str) -> str:
 
     if re.search(r"\b(can you|could you|would you)\b.*\b(tell me a joke|tell me a story|write me a poem|give me a pep talk|keep me company)\b", value):
         return "conversation"
+
+    if ARITHMETIC_RE.search(value):
+        return "command"
 
     if "?" in value or QUESTION_WORD_RE.search(value):
         return "question"
@@ -161,43 +172,54 @@ def classify_intent(text: str) -> dict:
     Retries once on transient model failures and falls back to a conservative
     lexical heuristic when the model is unavailable or returns malformed data.
     """
+    if ARITHMETIC_RE.search((text or "").lower()):
+        return {
+            "intent": "command",
+            "raw_text": text,
+            "timestamp": _now_iso(),
+        }
+
     prompt = CLASSIFY_PROMPT_TEMPLATE.format(text=text)
     intent = "conversation"
 
-    for attempt in range(MODEL_RETRY_ATTEMPTS):
-        try:
-            response = ollama.chat(
-                model=MODEL_NAME,
-                messages=[{"role": "user", "content": prompt}],
-                format="json",
-                think=False,
-                options={"temperature": 0.1},
-            )
-            raw_content = response["message"]["content"]
-            intent = _parse_model_intent(raw_content)
-            return {
-                "intent": intent,
-                "raw_text": text,
-                "timestamp": _now_iso(),
-            }
-        except Exception as exc:
-            logger.warning(
-                "classify_intent attempt %s/%s failed for text=%r: %s",
-                attempt + 1,
-                MODEL_RETRY_ATTEMPTS,
-                text,
-                exc,
-            )
-            if attempt + 1 < MODEL_RETRY_ATTEMPTS:
-                time.sleep(0.5)
-                continue
-            intent = _heuristic_intent(text)
-            logger.warning(
-                "classify_intent: using heuristic fallback for text=%r -> %s",
-                text,
-                intent,
-            )
-            break
+    if ollama is None:
+        intent = _heuristic_intent(text)
+        logger.warning("ollama is unavailable; using heuristic intent for text=%r -> %s", text, intent)
+    else:
+        for attempt in range(MODEL_RETRY_ATTEMPTS):
+            try:
+                response = ollama.chat(
+                    model=MODEL_NAME,
+                    messages=[{"role": "user", "content": prompt}],
+                    format="json",
+                    think=False,
+                    options={"temperature": 0.1},
+                )
+                raw_content = response["message"]["content"]
+                intent = _parse_model_intent(raw_content)
+                return {
+                    "intent": intent,
+                    "raw_text": text,
+                    "timestamp": _now_iso(),
+                }
+            except Exception as exc:
+                logger.warning(
+                    "classify_intent attempt %s/%s failed for text=%r: %s",
+                    attempt + 1,
+                    MODEL_RETRY_ATTEMPTS,
+                    text,
+                    exc,
+                )
+                if attempt + 1 < MODEL_RETRY_ATTEMPTS:
+                    time.sleep(0.5)
+                    continue
+                intent = _heuristic_intent(text)
+                logger.warning(
+                    "classify_intent: using heuristic fallback for text=%r -> %s",
+                    text,
+                    intent,
+                )
+                break
 
     return {
         "intent": intent,
@@ -220,6 +242,8 @@ def generate_direct_response(text: str, context: dict) -> str:
     )
  
     try:
+        if ollama is None:
+            return "Sorry, the language model is unavailable right now."
         response = ollama.chat(
             model=MODEL_NAME,
             messages=[{"role": "user", "content": prompt}],

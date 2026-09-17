@@ -24433,3 +24433,47 @@ ValueError: unsafe or malformed math expression
 2026-09-16 08:49:38,760 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-16 08:50:00,672 | dragoon | INFO | intent=command text='Calculate 12 + 7'
 2026-09-16 08:50:22,531 | dragoon | INFO | response='19.0'
+2026-09-17 14:38:33,704 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:38:33,704 | dragoon | WARNING | core.intent not implemented yet (Phase 1) — stub classifies everything as conversation
+2026-09-17 14:38:33,706 | dragoon | INFO | intent=conversation text='What is 34 +934?'
+2026-09-17 14:38:33,739 | dragoon | INFO | response='(stub — Phase 1 not implemented) You said: What is 34 +934?'
+2026-09-17 14:38:51,091 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:38:51,091 | dragoon | WARNING | core.intent not implemented yet (Phase 1) — stub classifies everything as conversation
+2026-09-17 14:38:51,091 | dragoon | INFO | intent=conversation text='What is 34 +934?'
+2026-09-17 14:38:51,121 | dragoon | INFO | response='(stub — Phase 1 not implemented) You said: What is 34 +934?'
+2026-09-17 14:41:57,726 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:41:57,727 | dragoon | WARNING | ollama is unavailable; using heuristic intent for text='What is 34 +934?' -> command
+2026-09-17 14:41:57,727 | dragoon | INFO | intent=command text='What is 34 +934?'
+2026-09-17 14:41:57,727 | dragoon | WARNING | core.candidates not implemented yet (Phase 2) — stub auto-executes raw text unchanged
+2026-09-17 14:41:57,728 | dragoon | ERROR | run_agent_loop failed on retry for text='What is 34 +934?'
+Traceback (most recent call last):
+  File "D:\Dragoon-AI\core\agent_loop.py", line 184, in run_agent_loop
+    result = registry[tool_name](**args)
+  File "D:\Dragoon-AI\Tools\register.py", line 33, in calculate
+    return _safe_math(str(value))
+  File "D:\Dragoon-AI\Tools\register.py", line 20, in _safe_math
+    raise ValueError("unsafe or malformed math expression")
+ValueError: unsafe or malformed math expression
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\Dragoon-AI\core\agent_loop.py", line 209, in run_agent_loop
+    result = registry[tool_name](**args)
+  File "D:\Dragoon-AI\Tools\register.py", line 33, in calculate
+    return _safe_math(str(value))
+  File "D:\Dragoon-AI\Tools\register.py", line 20, in _safe_math
+    raise ValueError("unsafe or malformed math expression")
+ValueError: unsafe or malformed math expression
+2026-09-17 14:41:57,762 | dragoon | INFO | response='I hit a tool error while executing that command: unsafe or malformed math expression'
+2026-09-17 14:42:50,694 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:42:50,695 | dragoon | WARNING | ollama is unavailable; using heuristic intent for text='What is 34 +934?' -> command
+2026-09-17 14:42:50,722 | dragoon | INFO | intent=command text='What is 34 +934?'
+2026-09-17 14:42:50,723 | dragoon | WARNING | core.candidates not implemented yet (Phase 2) — stub auto-executes raw text unchanged
+2026-09-17 14:42:50,760 | dragoon | INFO | response='968.0'
+2026-09-17 14:51:41,854 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:51:57,299 | dragoon | INFO | intent=question text='What is 34 +934?'
+2026-09-17 14:52:06,866 | dragoon | INFO | response="Three hundred sixty-eight! That's what 34 plus 934 adds up to. Is there anything else you'd like me to calculate?"
+2026-09-17 14:52:23,360 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-17 14:52:23,360 | dragoon | INFO | intent=command text='What is 34 +934?'
+2026-09-17 14:52:31,103 | dragoon | INFO | response='968.0'

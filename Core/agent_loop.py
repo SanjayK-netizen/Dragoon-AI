@@ -93,7 +93,7 @@ def _parse_tool_call(text: str, tool_registry: Optional[Dict[str, Callable[..., 
         expr = re.sub(r"\b(minus|less)\b", "-", expr, flags=re.IGNORECASE)
         expr = re.sub(r"\b(times|multiplied by)\b", "*", expr, flags=re.IGNORECASE)
         expr = re.sub(r"\b(divided by|over)\b", "/", expr, flags=re.IGNORECASE)
-        return {"tool": "calculate", "args": {"value": expr.strip()}}
+        return {"tool": "calculate", "args": {"value": expr.strip().rstrip("?.!,")}}
 
     reminder_match = re.match(r"^(?:set|create) a reminder\s+(?:to\s+)?(.+)$", text.strip(), re.IGNORECASE)
     if reminder_match:

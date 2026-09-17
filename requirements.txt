@@ -1,2 +1,4 @@
 SpeechRecognition>=3.10.0
 PyAudio>=0.2.14
+numpy>=1.26.0
+ollama>=0.4.0
