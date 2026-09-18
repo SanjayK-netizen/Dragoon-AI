@@ -133,14 +133,14 @@ def _heuristic_intent(text: str) -> str:
     if ARITHMETIC_RE.search(value):
         return "command"
 
-    if "?" in value or QUESTION_WORD_RE.search(value):
-        return "question"
-
     if re.search(r"\b(set|start|create|schedule)\b.*\b(timer|reminder)\b|\b(timer|reminder)\b.*\b(for|in)\b", value):
         return "command"
 
     if any(hint in value for hint in COMMAND_HINTS):
         return "command"
+
+    if "?" in value or QUESTION_WORD_RE.search(value):
+        return "question"
 
     return "conversation"
 
