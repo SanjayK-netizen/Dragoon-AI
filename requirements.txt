@@ -2,3 +2,13 @@ SpeechRecognition>=3.10.0
 PyAudio>=0.2.14
 numpy>=1.26.0
 ollama>=0.4.0
+ollama-llm>=0.4.0
+     models="qwen3.5.2b-chat
+            qwen-embed-3.5.2b
+            qwen-2.0.2b-chat"
+
+If needed, you can install the required packages using pip:
+            "pyttsx3,
+                openai-whisper,
+                    sounddevice,
+                          pywin32"

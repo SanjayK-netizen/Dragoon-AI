@@ -13,9 +13,12 @@ Exit criteria: >=85% accuracy, reproduced on two separate runs.
 
 import sys
 import os
+import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from core.intent import classify_intent  # noqa: E402
+from core.intent import generate_direct_response  # noqa: E402
 
 # (text, expected_intent) — expand this to 60-100 total before trusting the
 # accuracy number. Include deliberately ambiguous ones, per the build plan.
@@ -84,6 +87,23 @@ LABELED_SET = [
     ("I'm not sure what to do next", "conversation"),
     ("That sounds great", "conversation"),
 ]
+
+
+class IntentResponseTests(unittest.TestCase):
+    def test_direct_response_bounds_context(self):
+        context = {"context": {"fact": "x" * 5000}}
+        captured = {}
+
+        def fake_chat(**kwargs):
+            captured["prompt"] = kwargs["messages"][0]["content"]
+            return {"message": {"content": "ok"}}
+
+        with patch("core.intent.ollama.chat", side_effect=fake_chat):
+            response = generate_direct_response("What do you remember?", context)
+
+        self.assertEqual(response, "ok")
+        self.assertLess(len(captured["prompt"]), 2500)
+        self.assertIn("...", captured["prompt"])
 
 
 def run_accuracy_test():

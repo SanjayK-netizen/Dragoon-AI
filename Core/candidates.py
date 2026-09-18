@@ -133,7 +133,7 @@ def _embed_batch(texts):
         except Exception as exc:
             if attempt == MAX_MODEL_RETRIES:
                 logger.exception("_embed_batch: embedding call failed after retries for %s texts", len(texts))
-                return [_deterministic_embed(t) for t in texts]
+                return [None] * len(texts)
             time.sleep(_retry_delay(attempt))
 
 
@@ -340,6 +340,25 @@ def generate_and_score(text: str) -> dict:
         candidate_vectors = _embed_batch(scoring_candidates)
     known_vectors = _embed_batch(KNOWN_COMMANDS)
 
+    if any(vector is None for vector in candidate_vectors + known_vectors):
+        result = {
+            "candidates": [
+                {
+                    "text": candidate,
+                    "embedding_score": 0.0,
+                    "keyword_score": 0.0,
+                    "combined_score": 0.0,
+                }
+                for candidate in raw_candidates
+            ],
+            "selected_index": None,
+            "action": "disambiguate",
+            "agreement_score": 0.0,
+        }
+        logger.warning("generate_and_score: embedding unavailable; forcing disambiguation for %r", text)
+        _log_low_confidence(text, result)
+        return result
+
     scored = []
     for c_text, score_text, c_vec in zip(raw_candidates, scoring_candidates, candidate_vectors):
         embed_score = max(
@@ -359,8 +378,7 @@ def generate_and_score(text: str) -> dict:
     best_index = max(range(len(scored)), key=lambda i: scored[i]["combined_score"])
     best_score = scored[best_index]["combined_score"]
     agreement = _pairwise_agreement(candidate_vectors)
-    high_confidence_math = _is_clear_math_command(text)
-    if high_confidence_math:
+    if _is_clear_math_command(text):
         # Never let a sampled paraphrase replace explicit operands. A model can
         # rewrite digits as words or otherwise alter the calculation.
         scored[best_index]["text"] = text.strip()
@@ -369,7 +387,7 @@ def generate_and_score(text: str) -> dict:
     # AND the N samples must have converged on it, not just one lucky guess
     # scoring well while the others disagreed.
     action = "auto_execute" if (
-        (best_score >= AUTO_EXECUTE_THRESHOLD or high_confidence_math)
+        best_score >= AUTO_EXECUTE_THRESHOLD
         and agreement >= AGREEMENT_THRESHOLD
     ) else "disambiguate"
 

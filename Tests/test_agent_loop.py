@@ -61,6 +61,30 @@ class AgentLoopTests(unittest.TestCase):
         self.assertIn("tool error", result)
         self.assertEqual(calls["count"], 2)
 
+    def test_verification_failure_retries_once(self):
+        calls = {"count": 0}
+
+        def tool():
+            calls["count"] += 1
+            return "result"
+
+        with patch("core.agent_loop._verify_tool_result", side_effect=[False, True]):
+            result = run_agent_loop(
+                'Use {"tool": "tool", "args": {}}',
+                tool_registry={"tool": tool},
+            )
+
+        self.assertEqual(result, "result")
+        self.assertEqual(calls["count"], 2)
+
+    def test_inline_args_preserve_quoted_spaces(self):
+        result = run_agent_loop(
+            'Use echo with message="hello world"',
+            tool_registry={"echo": lambda message: message},
+        )
+
+        self.assertEqual(result, "hello world")
+
 
 if __name__ == "__main__":
     unittest.main()

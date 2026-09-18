@@ -11,6 +11,7 @@ launch destructive tools; it starts with low-risk functions only.
 import json
 import logging
 import re
+import shlex
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
 
@@ -56,7 +57,7 @@ def _parse_inline_args(raw_args: str) -> Dict[str, Any]:
         return {}
 
     args: Dict[str, Any] = {}
-    for piece in re.split(r"\s+(?:and\s+)?", raw_args.strip()):
+    for piece in shlex.split(raw_args.strip()):
         if not piece:
             continue
         if "=" not in piece:
@@ -166,6 +167,9 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
     registry = tool_registry or _default_registry()
     state = "PARSE"
     last_error = None
+    tool_name = ""
+    args: Any = {}
+    result: Any = None
 
     try:
         for state in AgentState:
@@ -189,6 +193,7 @@ def run_agent_loop(text: str, tool_registry: Optional[Dict[str, Callable[..., An
                     raise
             elif state is AgentState.VERIFY:
                 if not _verify_tool_result(tool_name, result):
+                    last_error = f"verification failed for tool {tool_name!r}"
                     raise ValueError(f"verification failed for tool {tool_name!r}")
             elif state is AgentState.RESPOND:
                 return str(result)

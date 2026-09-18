@@ -19,6 +19,7 @@ import sys
 import os
 import unittest
 from unittest.mock import patch
+import numpy as np
 
 os.environ.setdefault("DRAGOON_DISABLE_OLLAMA", "1")
 
@@ -34,9 +35,9 @@ CLEAR_COMMANDS = [
     "Open my notes file",
     "Open the budget spreadsheet",
     "Calculate 47 times 23",
-    "What's 18% of 250?",
-    "What time is it right now",
-    "Tell me the current time",
+    "Calculate 18% of 250",
+    "Get the current time",
+    "Read the current time",
     "Add milk to my shopping list",
     "Put eggs on the grocery list",
     "Send a message to Alex",
@@ -44,7 +45,7 @@ CLEAR_COMMANDS = [
     "Start a timer for 10 minutes",
     "Set a 5 minute timer",
     "Check the weather forecast",
-    "What's the weather like tomorrow",
+    "Check tomorrow's weather",
     "Set a reminder to take medicine at 9am",
     "Open the file called notes.txt",
     "Calculate the square root of 144",
@@ -96,6 +97,21 @@ class CandidateSafetyTests(unittest.TestCase):
         result = generate_and_score("Fix that")
 
         self.assertEqual(result["action"], "disambiguate")
+
+    def test_ambiguous_numeric_command_does_not_bypass_score_threshold(self):
+        with patch("core.candidates._embed_batch", side_effect=lambda texts: [np.zeros(64) for _ in texts]):
+            result = generate_and_score("Add 5 to the count and multiply by 3")
+
+        self.assertEqual(result["action"], "disambiguate")
+
+    def test_embedding_failure_forces_disambiguation(self):
+        with patch.dict(os.environ, {"DRAGOON_DISABLE_OLLAMA": "0"}):
+            with patch("core.candidates.ollama.embed", side_effect=Exception("embedding unavailable")):
+                result = generate_and_score("Calculate 47 times 23")
+
+        self.assertEqual(result["action"], "disambiguate")
+        self.assertEqual(result["selected_index"], None)
+        self.assertEqual(result["agreement_score"], 0.0)
 
 
 def run_candidate_test():

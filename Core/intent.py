@@ -25,6 +25,7 @@ except ImportError:
 # Keep this in sync with main.py's MODEL_NAME — confirmed via Phase 0.
 MODEL_NAME = "qwen3.5:2b"
 MODEL_RETRY_ATTEMPTS = 2
+MAX_CONTEXT_CHARS = 2000
 
 logger = logging.getLogger("dragoon")
 
@@ -234,7 +235,12 @@ def generate_direct_response(text: str, context: dict) -> str:
     `context` comes from core.memory.get_context() (Phase 3) — empty dict
     is expected and fine until that module exists.
     """
-    context_block = f"\nRelevant context: {json.dumps(context)}\n" if context else ""
+    context_block = ""
+    if context:
+        serialized_context = json.dumps(context, ensure_ascii=False, separators=(",", ":"))
+        if len(serialized_context) > MAX_CONTEXT_CHARS:
+            serialized_context = serialized_context[:MAX_CONTEXT_CHARS] + "..."
+        context_block = f"\nRelevant context: {serialized_context}\n"
     prompt = (
         "You are Dragoon, a local voice assistant. Respond naturally and briefly "
         f"(1-3 sentences — this gets spoken aloud).{context_block}\n"
