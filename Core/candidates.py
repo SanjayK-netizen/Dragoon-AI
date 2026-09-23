@@ -282,6 +282,16 @@ def _is_clear_math_command(text: str) -> bool:
     return number_count >= 2 and math_cue is not None
 
 
+def _is_incomplete_math_command(text: str) -> bool:
+    """Recognize a math cue that has only one numeric operand."""
+    number_count = len(re.findall(r"\d+(?:\.\d+)?", text))
+    math_cue = re.search(
+        r"\b(calculate|compute|add|sum|plus|subtract|minus|multiply|times|divide|over)\b",
+        text.lower(),
+    )
+    return number_count == 1 and math_cue is not None
+
+
 def _is_simple_math_command(text: str) -> bool:
     """Identify one explicit two-operand calculation without ambiguity."""
     numbers = re.findall(r"\d+(?:\.\d+)?", text)
@@ -312,6 +322,24 @@ def generate_and_score(text: str) -> dict:
     if blocked:
         logger.warning("generate_and_score: blocked unsafe input %r (%s)", text, reason)
         return {"candidates": [], "selected_index": None, "action": "disambiguate"}
+    if _is_incomplete_math_command(text):
+        operand = re.search(r"\d+(?:\.\d+)?", text).group(0)
+        result = {
+            "candidates": [
+                {
+                    "text": text.strip(),
+                    "embedding_score": 0.0,
+                    "keyword_score": 0.0,
+                    "combined_score": 0.0,
+                }
+            ],
+            "selected_index": None,
+            "action": "disambiguate",
+            "agreement_score": 1.0,
+            "clarification": f"What operation should I perform on {operand}?",
+        }
+        _log_low_confidence(text, result)
+        return result
     # Explicit arithmetic already contains the intent and operands; sampling
     # paraphrases can hallucinate or alter those operands, so keep it stable.
     raw_candidates = (

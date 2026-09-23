@@ -5,7 +5,8 @@ import logging
 import streamlit as st
 
 from IO.tts import speak
-from Tests.main import process_turn, setup_logging
+from IO.stt import transcribe_audio
+from app import process_turn, setup_logging
 
 
 st.set_page_config(
@@ -18,18 +19,26 @@ st.markdown(
     """
     <style>
     .stApp {
-        background: radial-gradient(circle at top, #18243d 0%, #0b1020 55%, #070a12 100%);
+        background: radial-gradient(circle at top, #2b1521 0%, #101a38 45%, #070a12 100%);
         color: #eef3ff;
     }
     .hero {
-        border: 1px solid #31466f;
+        border: 1px solid #d13b4f;
         border-radius: 18px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        background: linear-gradient(135deg, #18294c, #10182d);
+        background: linear-gradient(135deg, #202f61, #461d32);
     }
-    .hero h1 { color: #8dd6ff; margin-bottom: 0.25rem; }
+    .hero h1 { color: #ff6b72; margin-bottom: 0.25rem; }
     .hero p { color: #b7c8e8; margin-bottom: 0; }
+    div.stButton > button[kind="primary"] {
+        background: #c9344b;
+        border-color: #ff6570;
+    }
+    div.stButton > button[kind="secondary"] {
+        border-color: #3f7ee8;
+        color: #b9d2ff;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -62,6 +71,14 @@ with st.form("command_form", clear_on_submit=True):
     )
     speak_response = st.checkbox("Speak response", value=True)
     submitted = st.form_submit_button("Run command", type="primary")
+
+listen = st.button("Listen from microphone")
+
+if listen:
+    with st.spinner("Listening..."):
+        command = transcribe_audio()
+    submitted = bool(command.strip())
+    speak_response = True
 
 if submitted:
     if not command.strip():

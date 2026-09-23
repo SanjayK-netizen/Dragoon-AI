@@ -168,9 +168,20 @@ def process_turn(raw_text, logger):
     if intent_result["intent"] == "command":
         candidate_result = generate_and_score(raw_text)
         if candidate_result["action"] == "disambiguate":
-            options = [c["text"] for c in candidate_result["candidates"][:2]]
+            options = []
+            for candidate in candidate_result.get("candidates", []):
+                option = str(candidate.get("text", "")).strip()
+                if option and option.casefold() not in {item.casefold() for item in options}:
+                    options.append(option)
             logger.info(f"low-confidence routing -> disambiguating between: {options}")
-            response = "Which did you mean: " + " or ".join(options) + "?"
+            response = candidate_result.get("clarification")
+            if not response:
+                if len(options) > 1:
+                    response = "Which did you mean: " + " or ".join(options[:2]) + "?"
+                elif options:
+                    response = f"Could you clarify what you want me to do with {options[0]!r}?"
+                else:
+                    response = "Could you clarify what you want me to do?"
             outcome = "disambiguate"
         else:
             selected = candidate_result["candidates"][candidate_result["selected_index"]]
