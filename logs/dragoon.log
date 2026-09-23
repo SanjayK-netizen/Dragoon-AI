@@ -24489,3 +24489,25 @@ ValueError: unsafe or malformed math expression
 2026-09-23 11:29:09,247 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-23 11:29:22,490 | dragoon | INFO | intent=conversation text='Hello...... '
 2026-09-23 11:29:28,948 | dragoon | INFO | response='Hello! How can I help you today?'
+2026-09-23 14:35:43,900 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:35:43,904 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-23 14:37:03,884 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:37:03,884 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-23 14:37:13,831 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Calculate 12 + 7', 'Calculate 12 + 7']
+2026-09-23 14:37:13,872 | dragoon | INFO | response='Which did you mean: Calculate 12 + 7 or Calculate 12 + 7?'
+2026-09-23 14:38:08,029 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:38:08,029 | dragoon | INFO | intent=command text='Calculate 12 + 7? '
+2026-09-23 14:38:11,674 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Calculate 12 + 7?', 'Calculate 12 + 7?']
+2026-09-23 14:38:11,758 | dragoon | INFO | response='Which did you mean: Calculate 12 + 7? or Calculate 12 + 7??'
+2026-09-23 14:41:36,233 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:41:36,233 | dragoon | INFO | intent=command text='Calculate 12 + 7? '
+2026-09-23 14:41:40,024 | dragoon | INFO | response='19.0'
+2026-09-23 14:42:56,227 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:42:56,227 | dragoon | INFO | intent=command text='Calculate 12 + 7? '
+2026-09-23 14:42:59,927 | dragoon | INFO | response='19.0'
+2026-09-23 14:43:13,861 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:43:13,861 | dragoon | INFO | intent=command text='Calculate 12 + 7? '
+2026-09-23 14:43:18,008 | dragoon | INFO | response='19.0'
+2026-09-23 14:43:42,871 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:43:42,871 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-23 14:43:46,479 | dragoon | INFO | response='19.0'

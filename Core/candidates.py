@@ -282,6 +282,16 @@ def _is_clear_math_command(text: str) -> bool:
     return number_count >= 2 and math_cue is not None
 
 
+def _is_simple_math_command(text: str) -> bool:
+    """Identify one explicit two-operand calculation without ambiguity."""
+    numbers = re.findall(r"\d+(?:\.\d+)?", text)
+    if len(numbers) != 2:
+        return False
+    if re.search(r"\b(and|then|after|before|multiply by|divided by)\b", text.lower()):
+        return False
+    return _is_clear_math_command(text)
+
+
 def generate_and_score(text: str) -> dict:
     """
     Generate N candidate interpretations of a command, score each against
@@ -390,6 +400,11 @@ def generate_and_score(text: str) -> dict:
         best_score >= AUTO_EXECUTE_THRESHOLD
         and agreement >= AGREEMENT_THRESHOLD
     ) else "disambiguate"
+    if (
+        _is_simple_math_command(text)
+        and all(candidate == text.strip() for candidate in raw_candidates)
+    ):
+        action = "auto_execute"
 
     result = {
         "candidates": scored,

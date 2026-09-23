@@ -120,10 +120,10 @@ except ImportError:
         return f"(stub — Phase 4 not implemented) Would execute: {text}"
 
 try:
-    from audio_io.tts import speak
+    from IO.tts import speak
 except ImportError:
     try:
-        from IO.tts import speak
+        from audio_io.tts import speak
     except ImportError:
         def speak(text):
             logging.getLogger("dragoon").warning("speech output is unavailable")
