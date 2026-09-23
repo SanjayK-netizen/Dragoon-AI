@@ -1,4 +1,9 @@
 if __package__:
+    from .password_utils import (
+        hash_password,
+        password_hash_needs_update,
+        verify_password,
+    )
     from .security_utils import (
         get_secret,
         require_secret,
@@ -11,6 +16,11 @@ if __package__:
         write_text_file,
     )
 else:
+    from password_utils import (
+        hash_password,
+        password_hash_needs_update,
+        verify_password,
+    )
     from security_utils import (
         get_secret,
         require_secret,
@@ -24,6 +34,9 @@ else:
     )
 
 __all__ = [
+    "hash_password",
+    "password_hash_needs_update",
+    "verify_password",
     "get_secret",
     "require_secret",
     "constant_time_equal",
