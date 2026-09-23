@@ -13,3 +13,4 @@ passlib[bcrypt]>=1.7.4
 bcrypt>=4.1.0
 python-dotenv>=1.0.1
 pip-audit>=2.7.3
+streamlit>=1.38.0

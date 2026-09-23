@@ -24511,3 +24511,6 @@ ValueError: unsafe or malformed math expression
 2026-09-23 14:43:42,871 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-23 14:43:42,871 | dragoon | INFO | intent=command text='Calculate 12 + 7'
 2026-09-23 14:43:46,479 | dragoon | INFO | response='19.0'
+2026-09-23 14:56:45,168 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 14:56:45,168 | dragoon | INFO | intent=command text='Calculate 12 + 7'
+2026-09-23 14:56:45,216 | dragoon | INFO | response='19.0'
