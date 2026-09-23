@@ -1,23 +1,5 @@
 SpeechRecognition>=3.10.0
 PyAudio>=0.2.14
-numpy>=1.26.0
 ollama>=0.4.0
-ollama-llm>=0.4.0
-     models=="qwen3.5.2b
-            qwen-embed-3.5.2b
-            qwen-2.0.2b"
-
-If needed, you can install the required packages using pip:
-            "pyttsx3>=2.90,
-                openai-whisper,
-                    sounddevice,
-                          pywin32>=302,
-                              pyobjc>=9.2.0,
-                                  pyobjc-framework-Quartz>=9.2.0,
-                                      pyobjc-framework-Cocoa>=9.2.0,
-                                          pyobjc-framework-AVFoundation>=9.2.0,
-                                              pyobjc-framework-CoreAudio>=9.2.0,
-                                                  pyobjc-framework-CoreMedia>=9.2.0,
-                                                      pyobjc-framework-CoreVideo>=9.2.0,
-                                                          pyobjc-framework-Foundation>=9.2.0,
-                                                              pyobjc-framework-AppKit>=9.2.0"
+pyttsx3>=2.90
+pywin32>=302
