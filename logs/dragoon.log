@@ -24486,3 +24486,6 @@ ValueError: unsafe or malformed math expression
 2026-09-18 09:17:25,533 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-18 09:17:25,534 | dragoon | INFO | intent=command text='What is 34 +934?'
 2026-09-18 09:17:28,647 | dragoon | INFO | response='968.0'
+2026-09-23 11:29:09,247 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
+2026-09-23 11:29:22,490 | dragoon | INFO | intent=conversation text='Hello...... '
+2026-09-23 11:29:28,948 | dragoon | INFO | response='Hello! How can I help you today?'
