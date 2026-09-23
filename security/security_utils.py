@@ -1,5 +1,7 @@
 import json
 import os
+import secrets
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable, Optional
 
@@ -53,6 +55,24 @@ def get_secret(
     return value if value is not None else default
 
 
+def require_secret(
+    name: str,
+    *,
+    min_length: int = 32,
+    env_file: str | os.PathLike[str] = ".env",
+) -> str:
+    value = get_secret(name, required=True, env_file=env_file)
+    if value is None or len(value) < min_length:
+        raise ValueError(
+            f"{name} must be at least {min_length} characters long"
+        )
+    return value
+
+
+def constant_time_equal(left: str, right: str) -> bool:
+    return secrets.compare_digest(left, right)
+
+
 def read_text_file(
     path: str | os.PathLike[str],
     *,
@@ -62,6 +82,8 @@ def read_text_file(
     file_path = Path(path)
     if not file_path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
+    if file_path.is_symlink() or not file_path.is_file():
+        raise ValueError(f"Refusing to read non-regular file: {file_path}")
 
     if file_path.stat().st_size > max_size:
         raise ValueError(f"File is too large to read safely: {file_path}")
@@ -79,14 +101,24 @@ def write_text_file(
 ) -> None:
     file_path = Path(path)
     file_path.parent.mkdir(parents=True, exist_ok=True)
+    if file_path.is_symlink():
+        raise ValueError(f"Refusing to overwrite symlink: {file_path}")
 
-    fd = os.open(file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{file_path.name}.",
+        dir=file_path.parent,
+        text=True,
+    )
     try:
         with os.fdopen(fd, "w", encoding=encoding) as handle:
             handle.write(content)
             handle.flush()
             os.fsync(handle.fileno())
+        os.chmod(temporary_name, mode)
+        os.replace(temporary_name, file_path)
     finally:
+        if os.path.exists(temporary_name):
+            os.unlink(temporary_name)
         try:
             os.chmod(file_path, mode)
         except OSError:
@@ -95,7 +127,7 @@ def write_text_file(
 
 def write_json_file(
     path: str | os.PathLike[str],
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     *,
     encoding: str = "utf-8",
     mode: int = 0o600,
