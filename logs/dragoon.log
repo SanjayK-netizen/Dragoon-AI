@@ -24514,3 +24514,18 @@ ValueError: unsafe or malformed math expression
 2026-09-23 14:56:45,168 | dragoon | INFO | Dragoon starting — model=qwen3.5:2b
 2026-09-23 14:56:45,168 | dragoon | INFO | intent=command text='Calculate 12 + 7'
 2026-09-23 14:56:45,216 | dragoon | INFO | response='19.0'
+2026-09-23 15:18:23,063 | dragoon | INFO | intent=conversation text='hello'
+2026-09-23 15:18:49,032 | dragoon | INFO | intent=command text='open chrome '
+2026-09-23 15:18:58,761 | dragoon | INFO | low-confidence routing -> disambiguating between: ['open browser', 'Launch Chrome']
+2026-09-23 15:19:15,099 | dragoon | INFO | intent=command text='launch brave'
+2026-09-23 15:19:21,028 | dragoon | INFO | low-confidence routing -> disambiguating between: ['launch brave', 'Launch Brave browser']
+2026-09-23 15:19:48,051 | dragoon | INFO | intent=command text='launch brave browser'
+2026-09-23 15:19:55,031 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Launch Brave browser', 'Launch brave browser']
+2026-09-23 15:20:42,172 | dragoon | INFO | intent=command text='stop response '
+2026-09-23 15:20:46,645 | dragoon | INFO | low-confidence routing -> disambiguating between: ['Stop response', 'stop response']
+2026-09-23 15:26:25,053 | dragoon | INFO | intent=command text='calculate 89*12'
+2026-09-23 15:26:59,049 | dragoon | INFO | intent=question text='what is  a build up project '
+2026-09-23 15:27:52,677 | dragoon | INFO | intent=command text=' calculate 34.6512'
+2026-09-23 15:27:59,575 | dragoon | INFO | low-confidence routing -> disambiguating between: ['calculate 34.6512', 'calculate 34.6512']
+2026-09-23 15:30:49,369 | dragoon | INFO | intent=command text='calculate 345.654*12.54(54)+54.876543-7654'
+2026-09-23 15:30:52,040 | dragoon | INFO | low-confidence routing -> disambiguating between: ['calculate 345.654*12.54(54)+54.876543-7654', 'calculate 345.654*12.54(54)+54.876543-7654']
